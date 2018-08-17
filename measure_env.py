@@ -11,37 +11,10 @@ now = time.strftime('%Y-%m-%d %H:%M:%S')
 #----------------------
 #SHT-25による温湿度計測
 #----------------------
-with sht21.SHT21(0) as sht21:
+with sht21.SHT21(1) as sht21:
   temp = float(sht21.read_temperature())
   humi = float(sht21.read_humidity())
 
-#
-#ec = 5   # Error Count : I2C通信などでエラーになった場合、リトライする回数を指定する。
-#while True:
-#  o = subprocess.Popen("/usr/local/lib/python2.7/site-packages/sht21.py",shell=True,stdout=subprocess.PIPE)
-#  line = o.stdout.readline()
-#  if (line==""):
-#    ec = ec - 1
-#    if (ec>0):
-#      continue
-#    else:
-#      print >> sys.stderr, "{0} SHT2x READ Error.".format(now)
-#  else:
-#    ec = 5   # Error Count : I2C通信などでエラーになった場合、リトライする回数を指定する。
-#    try:
-#      temp = float( line.split()[1] )
-#    except:
-#      time.sleep(0.3)
-#      continue
-#    temp = int(temp * 100)
-#    line = o.stdout.readline()
-#    try:
-#      humi = float( line.split()[1] )
-#    except:
-#      time.sleep(0.3)
-#      continue
-#    humi = int(humi * 100)
-#  break
 
 #----------------------
 # AEH11による照度計測
