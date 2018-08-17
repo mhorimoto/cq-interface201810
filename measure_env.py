@@ -11,7 +11,7 @@ now = time.strftime('%Y-%m-%d %H:%M:%S')
 #----------------------
 #SHT-25による温湿度計測
 #----------------------
-with sht21.SHT21(0) as sht21:
+with sht21.SHT21(1) as sht21:
   temp = float(sht21.read_temperature())
   humi = float(sht21.read_humidity())
 
