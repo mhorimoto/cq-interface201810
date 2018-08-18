@@ -1,17 +1,31 @@
 #! /usr/bin/env python
 #coding: utf-8
+#
+#######################################################
+# CQ出版
+#   インターフェース2018年10月号
+#   Ver. 1.00  18th Aug. 2018
+#          T.Okayasu, M.Horimoto
+#######################################################
+#
+#
 import subprocess
 import sys
 sys.path.append('/usr/local/lib/python2.7/site-packages')
 import time
-import sht21  # SHT2xのライブラリをimportする。試験
+import sht21  # SHT2xのライブラリをimportする
+
+BUSID = 1     # I2CのバスID、RPiの場合には1
+ERCNT = 5     # Error Count エラーリトライの回数を指定する
+LOGNAME = "/var/log/measure.log"  # 観測結果を収めるファイル。
+#                                   パーミッションに注意。
 
 # 現在時刻の取得
 now = time.strftime('%Y-%m-%d %H:%M:%S')
 #----------------------
 #SHT-25による温湿度計測
 #----------------------
-with sht21.SHT21(1) as sht21:
+with sht21.SHT21(BUSID) as sht21:
   temp = float(sht21.read_temperature())
   humi = float(sht21.read_humidity())
 
@@ -20,6 +34,9 @@ with sht21.SHT21(1) as sht21:
 # AEH11による照度計測
 #----------------------
 # プログラム実行時のパラメータを有無を確認する
+# コマンド引数に"L"を付けると低感度、すなわち超明るい環境で使う
+# 場合に指定する。農業用ならば、ほとんど"L"が必要。
+
 argvs = sys.argv
 argc = len(argvs)
 if (argc>1):
@@ -27,9 +44,8 @@ if (argc>1):
 else:
   reso = ""
 
-senseillu= 0x0102  # Sensor illuminate of AEH11
-I2CGET = "/usr/sbin/i2cget -y 1 "      # 最後の1はBUS IDなので現物に合わせて
-I2CSET = "/usr/sbin/i2cset -f -y 1 "   # 最後の1はBUS IDなので現物に合わせて
+I2CGET = "/usr/sbin/i2cget -y "+str(BUSID)
+I2CSET = "/usr/sbin/i2cset -f -y "+str(BUSID)
 
 AEH11_ADDR = 0x23  # I2Cアドレス
 AEH11_PON = 0x01   # PowerON
@@ -42,7 +58,7 @@ AEH11_MTREG69_1 = 0x42  # Mtreg 69 1st parameter
 AEH11_MTREG69_2 = 0x65  # Mtreg 69 2nd parameter
 AEH11_DATA = 0x00
 
-ec = 5
+ec = ERCNT
 while True:
   try:
     print >> sys.stderr, "{0} AEH11 PowerOn".format(now)
@@ -88,7 +104,7 @@ while True:
       print "{0} AEH11 Power ON Fail.".format(now)
       break
 
-ec = 5
+ec = ERCNT
 while True:
   print >> sys.stderr, "{0} AEH11 GetData".format(now)
   try:
@@ -120,6 +136,8 @@ if reso=="L":
 else:
   illVal = int(illVal*0.83)  # 0.83はカバー無しの場合。現物合わせの調整が必要
 
-print now, temp, humi, illVal    # ここの処理はこれから考える
-
+tx = "{0},{1:6.3f},{2:6.3f},{3}\n".format(now,temp,humi,illVal)
+logfp = open(LOGNAME,'a')
+logfp.write(tx)
+logfp.close()
 sys.exit()
