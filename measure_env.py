@@ -1,16 +1,15 @@
 #! /usr/bin/env python
 #coding: utf-8
+import sht21  # SHT2xライブラリのimport
 import subprocess
 import sys
-sys.path.append('/usr/local/lib/python2.7/site-packages')
 import time
-import sht21  # SHT2xのライブラリをimportする。試験
 
 # 現在時刻の取得
 now = time.strftime('%Y-%m-%d %H:%M:%S')
-#----------------------
+#----------------------------------------------------------------------
 #SHT-25による温湿度計測
-#----------------------
+#----------------------------------------------------------------------
 with sht21.SHT21(1) as sht21:
   temp = float(sht21.read_temperature())
   humi = float(sht21.read_humidity())
@@ -43,9 +42,9 @@ with sht21.SHT21(1) as sht21:
 #    humi = int(humi * 100)
 #  break
 
-#----------------------
+#----------------------------------------------------------------------
 # AEH11による照度計測
-#----------------------
+#----------------------------------------------------------------------
 # プログラム実行時のパラメータを有無を確認する
 argvs = sys.argv
 argc = len(argvs)
@@ -54,9 +53,9 @@ if (argc>1):
 else:
   reso = ""
 
-senseillu= 0x0102  # Sensor illuminate of AEH11
-I2CGET = "/usr/sbin/i2cget -y 1 "      # 最後の1はBUS IDなので現物に合わせて
-I2CSET = "/usr/sbin/i2cset -f -y 1 "   # 最後の1はBUS IDなので現物に合わせて
+#senseillu= 0x0102  # Sensor illuminate of AEH11
+I2CGET = "/usr/sbin/i2cget -y 1 "      # 最後の1はBUS IDなので現物に合わせて変更要
+I2CSET = "/usr/sbin/i2cset -f -y 1 "   # 最後の1はBUS IDなので現物に合わせて変更要
 
 AEH11_ADDR = 0x23  # I2Cアドレス
 AEH11_PON = 0x01   # PowerON
@@ -69,6 +68,7 @@ AEH11_MTREG69_1 = 0x42  # Mtreg 69 1st parameter
 AEH11_MTREG69_2 = 0x65  # Mtreg 69 2nd parameter
 AEH11_DATA = 0x00
 
+# センサデータの起動・初期化
 ec = 5
 while True:
   try:
@@ -115,6 +115,7 @@ while True:
       print "{0} AEH11 Power ON Fail.".format(now)
       break
 
+# センサデータの読み取り
 ec = 5
 while True:
   print >> sys.stderr, "{0} AEH11 GetData".format(now)
@@ -139,14 +140,29 @@ if vstr=="":
   argvt = "DEVERR"
   illVal = -1
 
+# 計測データの変換
 illhex = "0x"+str(vstr[4])+str(vstr[5])+str(vstr[2])+str(vstr[3])
 illVal = int(illhex,16)
 
+# 計測データの補正（計測モードやセンサへのカバー等の取付など条件に合わせて補正を行う）
 if reso=="L":
-  illVal = int(illVal*1.79)  # 1.79はカバー無しの場合。現物合わせの調整が必要
+  illVal = int(illVal*1.79)  # 1.79はカバー無しの場合。現物に合わせて値の調整要
 else:
-  illVal = int(illVal*0.83)  # 0.83はカバー無しの場合。現物合わせの調整が必要
+  illVal = int(illVal*0.83)  # 0.83はカバー無しの場合。現物に合わせて値の調整要
 
-print now, temp, humi, illVal    # ここの処理はこれから考える
+# 計測データの表示
+print now, temp, humi, illVal
+
+# 計測データをSDカードに保存
+f = open('data_env.csv','a')
+f.write(now)
+f.write(', ')
+f.write(str(temp))
+f.write(', ')
+f.write(str(humi))
+f.write(', ')
+f.write(str(illVal))
+f.write('\n')
+f.close()
 
 sys.exit()
